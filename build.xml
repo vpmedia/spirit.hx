@@ -51,7 +51,7 @@
     </target>
     <target name="spirit">
         <exec executable="neko">
-            <arg line="bin/spirit.n -from test/xml -to test/json -remove true -format true -verbose true"/>
+            <arg line="bin/spirit.n -from test/xml -to test/json -remove true -format true -verbose true -convert true"/>
         </exec> 
     </target>
 </project>

@@ -16,76 +16,77 @@ using Spirit;
  */
 class Spirit
 {
-    public static var keys = ["-from", "-to", "-remove", "-format", "-verbose", "-autoImagePath", "-autoFrameName", "-unpack"];
-    
-    var to:String;
-    var from:String; 
-    var remove:String;
-    var format:String;
-    var verbose:String;
-    var autoImagePath:String;
-    var autoFrameName:String;
-    var unpack:String;
-    
-    var sysargs:Array<String>;    
-    var items:Array<String>;
-        
-    private var maxLoop:Int;
-    
-    static function main() 
+    private var argKeys:Array<String> = [
+        "from",
+        "to",
+        "convert",
+        "remove",
+        "format",
+        "verbose",
+        "autoImagePath",
+        "autoFrameName",
+        "unpack"
+    ];
+
+    private var argValues:Dynamic = {};
+
+    private var to:String;
+    private var from:String;
+    private var remove:String;
+    private var format:String;
+    private var verbose:String;
+    private var autoImagePath:String;
+    private var autoFrameName:String;
+    private var unpack:String;
+
+    private var items:Array<String>;
+
+    static function main()
     {
         new Spirit();
     }
-    
+
     public function new()
     {
-        maxLoop = 1000;
-        
         if (parseArgs())
         {
-        
             // make sure that the to directory exists
             if (!FileSystem.exists(to)) FileSystem.createDirectory(to);
-            
             // delete old files
             if (remove == "true") {
                 removeDirectory(to);
             }
-            
             items = [];
             // fill items
             recurse(from);
-            
             for (item in items)
             {
                 var ext = getExt(item);
-                switch(ext)
-                {
-                    case "xml": 
-                        doConversion(item);
+                if(ext == "xml") {
+                    doConversion(item);
                 }
             }
         }
     }
-    
+
     private function doConversion(file:String):Void
-    {        
+    {
         var fromFile = file;
         var fileName = file.substr(from.length + 1, file.lastIndexOf(".") - (from.length + 1));
         var toFile = to + "/" + fileName + "." + "json";
-        
+
         /* -----------------------------------------------------------*/
         // create the folder if it doesn"t exist
         var dir = toFile.substr(0, toFile.lastIndexOf("/"));
         createFolder(dir);
-        
+
         var s = File.getContent(fromFile);
-              
+
         if (verbose == "true") {
             Lib.println("Processing: " + file);
-        }  
+        }
         if(!Utf8.validate(s)) {
-            // Convert UTF-16 (UCS2) to UTF-8  
+            // Convert UTF-16 (UCS2) to UTF-8
             var arr = s.split("");
             var filtered = "";
             var c = 0;
@@ -100,35 +101,35 @@ class Spirit
             }
             s = filtered;
         }
-        if(s.indexOf("SubTexture") == -1) {           
+        if(s.indexOf("SubTexture") == -1) {
             if (verbose == "true") {
                 Lib.println("Ignoring ('SubTexture' not found): " + file);
                 return;
             }
         }
-        
+
         /* -----------------------------------------------------------*/
         // normalize the XML string
         if(s.indexOf("<TextureAtlas") > 0) {
-            s = StringTools.replace(s, s.substr(0, s.indexOf("<TextureAtlas")), "");        
+            s = StringTools.replace(s, s.substr(0, s.indexOf("<TextureAtlas")), "");
         }
         var si = 0;
         var ei = 1;
-        while(si > -1 && ei > -1 && si != ei) { 
-            //s = StringTools.trim(s);         
+        while(si > -1 && ei > -1 && si != ei) {
+            //s = StringTools.trim(s);
             si = s.indexOf("<!--");
-            ei = s.indexOf("-->");   
-            var part = s.substr(si, ei + 1);   
+            ei = s.indexOf("-->");
+            var part = s.substr(si, ei + 1);
             if(part != null && part != "" && part.length > 1) {
-                //Lib.println("Removing segment: " + "'" + part + "'" + " (size:" + part.length + ")"); 
+                //Lib.println("Removing segment: " + "'" + part + "'" + " (size:" + part.length + ")");
                 s = StringTools.replace(s, part, "");
-            }            
+            }
         }
         s = StringTools.trim(s);
         var xml = Xml.parse(s);
         var project = xml.firstChild();
         var imagePath = project.get("imagePath");
-        if(imagePath == null || imagePath == "") {                   
+        if(imagePath == null || imagePath == "") {
             if (verbose == "true") {
                 Lib.println("Ignoring ('imagePath' not found): " + file);
             }
@@ -140,16 +141,16 @@ class Spirit
         // get png size
         var pngData = {"width": 0, "height": 0};
         var pngPath = from + "/" + imagePath;
-        if(FileSystem.exists(pngPath)) {                  
+        if(FileSystem.exists(pngPath)) {
             /*if (verbose == "true") {
                 Lib.println("Reading PNG: " + pngPath);
             }*/
-            pngData = readPNG(pngPath);        
+            pngData = readPNG(pngPath);
         }
-        
+
         /* -----------------------------------------------------------*/
         // create the json core structure
-        var json = { 
+        var json = {
             "frames": {},
             "meta": {
                 "app": "TexturePacker",
@@ -158,9 +159,9 @@ class Spirit
                 "format": "RGBA8888",
                 "size": { "w": pngData.width, "h": pngData.height},
                 "scale": 1
-            } 
-        };  
-        
+            }
+        };
+
         // parse frames
         var frameCount = 0;
         for (node in project)
@@ -180,33 +181,33 @@ class Spirit
                     "frame": {"x": stX, "y": stY, "w": stW, "h": stH},
                     "rotated": false,
                     "trimmed": false,
-                    "spriteSourceSize": {"x": 0, "y": 0, "w": stW, "h": stH},      
-                    "sourceSize": {"w": stW, "h": stH},                 
+                    "spriteSourceSize": {"x": 0, "y": 0, "w": stW, "h": stH},
+                    "sourceSize": {"w": stW, "h": stH},
                 };
                 Reflect.setField(json.frames, stN, o);
                 frameCount++;
             }
         }
-                  
+
         /* -----------------------------------------------------------*/
         // beautify output optionally
         if (format == "true") {
             s = Json.stringify(json, null, "  ");
         } else {
-            s = Json.stringify(json);        
-        }            
-        
+            s = Json.stringify(json);
+        }
+
         /* -----------------------------------------------------------*/
         // write out file
         var o = File.write(toFile, true);
         o.writeString(s);
         o.close();
-        
-        /* -----------------------------------------------------------*/        
+
+        /* -----------------------------------------------------------*/
         // use for testing on a single file
         //Sys.exit(1);
     }
-    
+
     private function readPNG(file:String):{data:Bytes, width:Int, height:Int} {
         var handle = File.read(file, true);
         var d = new Reader(handle).read();
@@ -219,7 +220,7 @@ class Spirit
         handle.close();
         return ret;
     }
-            
+
     private function createFolder(path:String):Void
     {
         var parts = path.split("/");
@@ -231,25 +232,31 @@ class Spirit
             if (!FileSystem.exists(folder)) FileSystem.createDirectory(folder);
         }
     }
-    
+
     private function parseArgs():Bool
     {
         // Parse args
         var args = Sys.args();
-        for (i in 0...args.length)
-            if (Lambda.has(keys, args[i]))
+        for (i in 0...args.length) {
+            if (Lambda.has(argKeys, args[i].substr(1))) {
+                Reflect.setField(argValues, args[i].substr(1), args[i + 1]);
                 Reflect.setField(this, args[i].substr(1), args[i + 1]);
-            
+            }
+        }
+        // Print out parsed arguments in verbose mode
+        if (verbose == "true") {
+            Lib.println(argValues);
+        }
         // Check to see if argument is missing
         if (to == null) { Lib.println("Missing argument '-to'"); return false; }
         if (from == null) { Lib.println("Missing argument '-from'"); return false; }
-        
+
         return true;
     }
-    
+
     public function recurse(path:String)
     {
-        var dir = FileSystem.readDirectory(path);        
+        var dir = FileSystem.readDirectory(path);
         for (item in dir)
         {
             var s = path + "/" + item;
@@ -265,12 +272,12 @@ class Spirit
             }
         }
     }
-    
+
     public function getExt(s:String)
     {
         return s.substr(s.lastIndexOf(".") + 1).toLowerCase();
     }
-    
+
     public function removeDirectory(d, p = null)
     {
         if (p == null) p = d;
@@ -286,7 +293,7 @@ class Spirit
             }else{
                 FileSystem.deleteFile(item);
             }
-        }        
+        }
         FileSystem.deleteDirectory(d);
     }
 }
