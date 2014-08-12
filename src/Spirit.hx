@@ -9,14 +9,14 @@ import sys.FileSystem;
 import sys.io.File;
 
 using StringTools;
-using XML2JSON;
+using Spirit;
 
 /**
- * TexturePacker XML to JSON translator (For Flash to HTML5 asset conversion).
+ * Spirit - The Sprite Sheet ToolKit CLI
  */
-class XML2JSON
+class Spirit
 {
-    public static var keys = ["-from", "-to", "-remove", "-format", "-verbose", "-autoImagePath", "-autoFrameName"];
+    public static var keys = ["-from", "-to", "-remove", "-format", "-verbose", "-autoImagePath", "-autoFrameName", "-unpack"];
     
     var to:String;
     var from:String; 
@@ -25,6 +25,7 @@ class XML2JSON
     var verbose:String;
     var autoImagePath:String;
     var autoFrameName:String;
+    var unpack:String;
     
     var sysargs:Array<String>;    
     var items:Array<String>;
@@ -33,7 +34,7 @@ class XML2JSON
     
     static function main() 
     {
-        new XML2JSON();
+        new Spirit();
     }
     
     public function new()

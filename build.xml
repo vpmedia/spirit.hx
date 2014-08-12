@@ -43,15 +43,15 @@
         <mkdir dir="bin"/>
     </target>
     <!-- BUILD -->    
-    <target name="build" depends="clean,compile,xml2json" description="Builds the project"/>
+    <target name="build" depends="clean,compile,spirit" description="Builds the project"/>
     <target name="compile">
         <exec executable="haxe">
             <arg line="build.hxml"/>
         </exec> 
     </target>
-    <target name="xml2json">
+    <target name="spirit">
         <exec executable="neko">
-            <arg line="bin/XML2JSON.n -from test/xml -to test/json -remove true -format true -verbose true"/>
+            <arg line="bin/spirit.n -from test/xml -to test/json -remove true -format true -verbose true"/>
         </exec> 
     </target>
 </project>

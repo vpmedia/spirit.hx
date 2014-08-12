@@ -27,10 +27,9 @@
 #
 
 #######################################
-# Compile XMLtoJSON binary
+# Compile Spirit binary
 #######################################
 -cp src 
--main XML2JSON
+-main Spirit
 -lib format
--neko bin/XML2JSON.n
-
+-neko bin/spirit.n
