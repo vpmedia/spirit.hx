@@ -8,12 +8,8 @@ Usage
 
 ## Converting TexturePacker XML to JSON format
 
-> neko spirit.n -from test/xml -to test/json -convert true
+> neko spirit.n -from test/xml -to test/json -convert true -ext xml -remove true -format true -verbose true -convert true
 
 ## Converting TexturePacker JSON to XML format
 
-> neko spirit.n -from test/json -to test/xml -convert true
-
-## Unpack TexturePacker spritesheet
-
-> neko spirit.n -from test/sheet -to test/temp -unpack true
+> neko spirit.n -from test/json -to test/xml -convert true -ext json -remove true -format true -verbose true -convert true
