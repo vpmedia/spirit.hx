@@ -22,7 +22,8 @@
 #
 
 # Test output files
-test/json/
+test/xml2json/json/
+test/json2xml/xml/
 
 # IntelliJ IDEA
 .idea/

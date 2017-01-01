@@ -19,6 +19,7 @@ class Spirit
     private var argKeys:Array<String> = [
         "from",
         "to",
+        "ext",
         "convert",
         "remove",
         "format",
@@ -30,8 +31,9 @@ class Spirit
 
     private var argValues:Dynamic = {};
 
-    private var to:String;
     private var from:String;
+    private var to:String;
+    private var ext:String;
     private var remove:String;
     private var format:String;
     private var verbose:String;
@@ -50,12 +52,10 @@ class Spirit
     {
         if (parseArgs())
         {
-            // make sure that the to directory exists
-            if (!FileSystem.exists(to)) FileSystem.createDirectory(to);
-            // delete old files
             if (remove == "true") {
                 removeDirectory(to);
             }
+            if (!FileSystem.exists(to)) FileSystem.createDirectory(to);
             items = [];
             // fill items
             recurse(from);
@@ -63,22 +63,61 @@ class Spirit
             {
                 var ext = getExt(item);
                 if(ext == "xml") {
-                    doConversion(item);
+                    doXmlToJsonConversion(item);
+                } else if(ext == "json") {
+                    doJsonToXmlConversion(item);
                 }
             }
         }
     }
-
-    private function doConversion(file:String):Void
+    
+    private function doJsonUnpack(file:String):Void
+    {
+    }
+    
+    private function doXmlUnpack(file:String):Void
+    {
+    }
+    
+    private function doJsonToXmlConversion(file:String):Void
+    {
+        var fromFile = file;
+        var fileName = file.substr(from.length + 1, file.lastIndexOf(".") - (from.length + 1));
+        var toFile = to + "/" + fileName + "." + "xml";        
+        var s = File.getContent(fromFile);
+        var data = Json.parse(s);        
+        if (verbose == "true") {
+            Lib.println("Processing: " + file);
+        }
+        var frames = Reflect.field(data, 'frames');
+        var meta = Reflect.field(data, 'meta');
+        var imageName = Reflect.field(meta, 'image');        
+        var resultHeader = '<?xml version="1.0" encoding="UTF-8"?>\n<TextureAtlas imagePath="' + imageName + '">\n';
+        var resultFooter = '\n</TextureAtlas>';
+        var result = '';
+        for (n in Reflect.fields(frames)) {
+            var frameData = Reflect.field(frames, n); 
+            var frameRect = Reflect.field(frameData, 'frame'); 
+            var frameName = n;
+            var frameX = Reflect.field(frameRect, 'x');
+            var frameY = Reflect.field(frameRect, 'y');
+            var frameW = Reflect.field(frameRect, 'w');
+            var frameH = Reflect.field(frameRect, 'h');
+            result += '  <SubTexture name="' + frameName + '" x="' + frameX + '" y="' + frameY + '" width="' + frameW + '" height="'+frameH + '"/>\n';
+        }         
+        if (verbose == "true") {
+            Lib.println("Saving: " + toFile);
+        }
+        var o = File.write(toFile, true);
+        o.writeString(resultHeader + result + resultFooter);
+        o.close();
+    }
+    
+    private function doXmlToJsonConversion(file:String):Void
     {
         var fromFile = file;
         var fileName = file.substr(from.length + 1, file.lastIndexOf(".") - (from.length + 1));
         var toFile = to + "/" + fileName + "." + "json";
-
-        /* -----------------------------------------------------------*/
-        // create the folder if it doesn"t exist
-        var dir = toFile.substr(0, toFile.lastIndexOf("/"));
-        createFolder(dir);
 
         var s = File.getContent(fromFile);
 
@@ -198,7 +237,10 @@ class Spirit
         }
 
         /* -----------------------------------------------------------*/
-        // write out file
+        // write out file      
+        if (verbose == "true") {
+            Lib.println("Saving: " + toFile);
+        }
         var o = File.write(toFile, true);
         o.writeString(s);
         o.close();
@@ -219,18 +261,6 @@ class Spirit
         };
         handle.close();
         return ret;
-    }
-
-    private function createFolder(path:String):Void
-    {
-        var parts = path.split("/");
-        var folder = "";
-        for (part in parts)
-        {
-            if (folder == "") folder += part;
-            else folder += "/" + part;
-            if (!FileSystem.exists(folder)) FileSystem.createDirectory(folder);
-        }
     }
 
     private function parseArgs():Bool
@@ -266,7 +296,7 @@ class Spirit
             }
             else
             {
-                var exts = ["xml"];
+                var exts = [ext];
                 if(Lambda.has(exts, getExt(item)))
                     items.push(s);
             }
