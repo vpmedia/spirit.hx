@@ -26,7 +26,8 @@ class Spirit
         "verbose",
         "autoImagePath",
         "autoFrameName",
-        "unpack"
+        "unpack",
+        "convert"
     ];
 
     private var argValues:Dynamic = {};
@@ -40,6 +41,7 @@ class Spirit
     private var autoImagePath:String;
     private var autoFrameName:String;
     private var unpack:String;
+    private var convert:String;
 
     private var items:Array<String>;
 
@@ -61,11 +63,18 @@ class Spirit
             recurse(from);
             for (item in items)
             {
-                var ext = getExt(item);
                 if(ext == "xml") {
-                    doXmlToJsonConversion(item);
+                    if(unpack == "true") {
+                        doXmlUnpack(item);
+                    } else {
+                        doXmlToJsonConversion(item);
+                    }                    
                 } else if(ext == "json") {
-                    doJsonToXmlConversion(item);
+                    if(unpack == "true") {
+                        doJsonUnpack(item);
+                    } else {
+                        doJsonToXmlConversion(item);
+                    } 
                 }
             }
         }
@@ -73,10 +82,34 @@ class Spirit
     
     private function doJsonUnpack(file:String):Void
     {
+        var fromFile = file;
+        var fileName = file.substr(from.length + 1, file.lastIndexOf(".") - (from.length + 1));
+        var s = File.getContent(fromFile);
+        var data = Json.parse(s);        
+        if (verbose == "true") {
+            Lib.println("Processing: " + file);
+        }
+        var frames = Reflect.field(data, 'frames');
+        var meta = Reflect.field(data, 'meta');
+        var imageName = Reflect.field(meta, 'image'); 
+        var pngSource = readPNG(from + '/' + imageName);  
+        for (n in Reflect.fields(frames)) {
+            var frameData = Reflect.field(frames, n); 
+            var frameRect = Reflect.field(frameData, 'frame'); 
+            var frameX = Reflect.field(frameRect, 'x');
+            var frameY = Reflect.field(frameRect, 'y');
+            var frameW = Reflect.field(frameRect, 'w');
+            var frameH = Reflect.field(frameRect, 'h'); 
+            var toFile = to + "/" + n + "." + "png"; 
+            /*if (verbose == "true") {
+                Lib.println("Saving: " + toFile);
+            }*/
+        }     
     }
     
     private function doXmlUnpack(file:String):Void
     {
+        // TODO: implement
     }
     
     private function doJsonToXmlConversion(file:String):Void
@@ -98,12 +131,11 @@ class Spirit
         for (n in Reflect.fields(frames)) {
             var frameData = Reflect.field(frames, n); 
             var frameRect = Reflect.field(frameData, 'frame'); 
-            var frameName = n;
             var frameX = Reflect.field(frameRect, 'x');
             var frameY = Reflect.field(frameRect, 'y');
             var frameW = Reflect.field(frameRect, 'w');
             var frameH = Reflect.field(frameRect, 'h');
-            result += '  <SubTexture name="' + frameName + '" x="' + frameX + '" y="' + frameY + '" width="' + frameW + '" height="'+frameH + '"/>\n';
+            result += '  <SubTexture name="' + n + '" x="' + frameX + '" y="' + frameY + '" width="' + frameW + '" height="'+frameH + '"/>\n';
         }         
         if (verbose == "true") {
             Lib.println("Saving: " + toFile);
@@ -280,6 +312,7 @@ class Spirit
         // Check to see if argument is missing
         if (to == null) { Lib.println("Missing argument '-to'"); return false; }
         if (from == null) { Lib.println("Missing argument '-from'"); return false; }
+        if (ext == null) { Lib.println("Missing argument '-ext'"); return false; }
 
         return true;
     }

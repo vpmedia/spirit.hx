@@ -50,13 +50,14 @@
         </exec> 
     </target>
     <target name="spirit">
-        <echo message="xml2json"/>
         <exec executable="neko">
             <arg line="bin/spirit.n -from test/xml2json/xml -to test/xml2json/json -ext xml -remove true -format true -verbose true -convert true"/>
         </exec> 
-        <echo message="json2xml"/>
         <exec executable="neko">
             <arg line="bin/spirit.n -from test/json2xml/json -to test/json2xml/xml -ext json -remove true -format true -verbose true -convert true"/>
+        </exec> 
+        <exec executable="neko">
+            <arg line="bin/spirit.n -from test/unpack -to test/unpack/temp -ext json -remove true -verbose true -unpack true"/>
         </exec> 
     </target>
 </project>

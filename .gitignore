@@ -24,6 +24,7 @@
 # Test output files
 test/xml2json/json/
 test/json2xml/xml/
+test/unpack/temp/
 
 # IntelliJ IDEA
 .idea/
